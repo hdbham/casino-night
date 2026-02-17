@@ -108,8 +108,8 @@ st.markdown(
     .bronze { background: linear-gradient(90deg,#e0b089,#8b4513); color: #1f130b; }
     .neutral { background: #041826; color: #e5e7eb; }
     .leader-row.negative-chips { text-decoration: line-through; opacity: 0.85; }
-    /* Fit entire leaderboard in view: viewport-relative sizing */
-    .leaderboard-scaled { max-height: min(65vh, 800px); overflow-y: auto; overflow-x: hidden; }
+    /* Leaderboard flows with page so TV/browser native scroll (and remote) works */
+    .leaderboard-scaled { overflow: visible; }
     .leaderboard-scaled .leader-row { font-size: clamp(0.65rem, 1.85vh, 1.1rem); padding: 0.15rem 0.5rem; margin: 0; border-radius: 4px; }
     .leaderboard-scaled .leader-row-wrap { margin-bottom: 0.15rem; }
     .leaderboard-scaled .medal-cell { width: clamp(1.25rem, 3.5vw, 1.75rem); font-size: clamp(14px, 2.8vh, 25px); }
