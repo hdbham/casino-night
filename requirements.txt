@@ -1,0 +1,11 @@
+streamlit
+pandas
+streamlit-autorefresh
+Pillow
+
+# Google Sheets (required when DEMO_MODE is False)
+gspread
+google-auth
+
+# For draw_winners.py (Python < 3.11)
+tomli

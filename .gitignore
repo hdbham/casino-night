@@ -1,0 +1,21 @@
+# Streamlit secrets — never commit; set in Streamlit Cloud dashboard
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+
+# IDE / OS
+.DS_Store
+.idea/
+*.swp
+*.swo
+
+# Local / env files
+.env
+*.local
