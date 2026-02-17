@@ -55,15 +55,28 @@ st.set_page_config(
     layout="wide",
 )
 
-# Hide Streamlit chrome for TV mode and set custom styles
+# Hide Streamlit chrome for TV mode, force dark theme, TV-friendly layout
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 1rem; max-width: 1200px; }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    body { background-color: #02111b; }
+    /* Force night mode and TV display */
+    .stApp, [data-testid="stAppViewContainer"], .main .block-container { background-color: #02111b !important; }
+    body { background-color: #02111b !important; }
+    .block-container { padding-top: 0.75rem; padding-bottom: 1.5rem; max-width: 1600px; margin-left: auto; margin-right: auto; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    header { visibility: hidden; }
+    /* Bottom action bar for TV: clear separation, readable from distance */
+    .tv-bottom-actions { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(249, 115, 22, 0.35); }
+    .tv-bottom-actions .stButton > button { font-size: 1rem !important; font-weight: 600 !important; padding: 0.6rem 1rem !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+# Legacy style block (leaderboard and rows)
+st.markdown(
+    """
+    <style>
     .leader-row {
         font-size: 2.2rem;
         padding: 0.2rem 1rem;
@@ -95,15 +108,17 @@ st.markdown(
     .bronze { background: linear-gradient(90deg,#e0b089,#8b4513); color: #1f130b; }
     .neutral { background: #041826; color: #e5e7eb; }
     .leader-row.negative-chips { text-decoration: line-through; opacity: 0.85; }
-    .leaderboard-scaled .leader-row { font-size: 1.1rem; padding: 0.1rem 0.5rem; margin: 0.075rem 0; border-radius: 4px; }
-    .leaderboard-scaled .leader-row-wrap { margin-bottom: 0.175rem; }
-    .leaderboard-scaled .medal-cell { width: 1.75rem; font-size: 25px; }
-    .leaderboard-scaled .rank { width: 2rem; padding-left: 0.125rem; }
-    .leaderboard-scaled .name-meta { font-size: 0.5rem; margin-top: 0.025rem; }
-    .leaderboard-scaled .status-badge { font-size: 0.475rem; }
+    /* Fit entire leaderboard in view: viewport-relative sizing */
+    .leaderboard-scaled { max-height: min(65vh, 800px); overflow-y: auto; overflow-x: hidden; }
+    .leaderboard-scaled .leader-row { font-size: clamp(0.65rem, 1.85vh, 1.1rem); padding: 0.15rem 0.5rem; margin: 0; border-radius: 4px; }
+    .leaderboard-scaled .leader-row-wrap { margin-bottom: 0.15rem; }
+    .leaderboard-scaled .medal-cell { width: clamp(1.25rem, 3.5vw, 1.75rem); font-size: clamp(14px, 2.8vh, 25px); }
+    .leaderboard-scaled .rank { width: clamp(1.5rem, 4vw, 2rem); padding-left: 0.1rem; }
+    .leaderboard-scaled .name-meta { font-size: 0.5em; margin-top: 0.05em; }
+    .leaderboard-scaled .status-badge { font-size: 0.85em; }
     .leaderboard-scaled .leader-row .up,
     .leaderboard-scaled .leader-row .down,
-    .leaderboard-scaled .leader-row .same { width: 1.5rem !important; }
+    .leaderboard-scaled .leader-row .same { width: 1.25rem !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1254,7 +1269,7 @@ def main():
             del st.session_state[key]
     # Title centered, then whale image below centered
     st.markdown(
-        "<h1 style='color:#f97316; font-size:3.5rem; letter-spacing:0.15em; "
+        "<h1 style='color:#f97316; font-size:clamp(2.5rem, 5vw, 4rem); letter-spacing:0.15em; "
         "text-transform:uppercase; line-height:1.2; margin:0; text-align:center;'>"
         "Casino Night<br>Leaderboard"
         "</h1>",
@@ -1335,6 +1350,15 @@ def main():
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    _leaderboard_fragment()
+
+    # Buttons at bottom for TV: main content above, actions below
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tv-bottom-actions">',
+        unsafe_allow_html=True,
+    )
     col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
     with col1:
         if st.button("Operator (spend / earn)", key="view_operator", use_container_width=True):
@@ -1365,9 +1389,7 @@ def main():
                 st.rerun()
             else:
                 st.warning("No options found. Add an Options sheet with 'Winning Options' in A1 and option names in A2 down.")
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    _leaderboard_fragment()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
