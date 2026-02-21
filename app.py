@@ -51,7 +51,7 @@ SCOPES_WRITE = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # ---------- SETUP ----------
 st.set_page_config(
-    page_title="Casino Night Leaderboard",
+    page_title="Leaderboard",
     layout="wide",
 )
 
@@ -108,10 +108,10 @@ st.markdown(
     .bronze { background: linear-gradient(90deg,#e0b089,#8b4513); color: #1f130b; }
     .neutral { background: #041826; color: #e5e7eb; }
     .leader-row.negative-chips { text-decoration: line-through; opacity: 0.85; }
-    /* Leaderboard flows with page so TV/browser native scroll (and remote) works */
+    /* Natural flow: no fixed height so nothing gets pushed out */
     .leaderboard-scaled { overflow: visible; }
-    .leaderboard-scaled .leader-row { font-size: clamp(0.65rem, 1.85vh, 1.1rem); padding: 0.15rem 0.5rem; margin: 0; border-radius: 4px; }
-    .leaderboard-scaled .leader-row-wrap { margin-bottom: 0.15rem; }
+    .leaderboard-scaled .leader-row-wrap { display: flex; align-items: center; margin-bottom: 0.35rem; }
+    .leaderboard-scaled .leader-row { font-size: clamp(0.65rem, 2.2vh, 1.5rem); padding: 0.35rem 0.5rem; margin: 0; border-radius: 4px; }
     .leaderboard-scaled .medal-cell { width: clamp(1.25rem, 3.5vw, 1.75rem); font-size: clamp(14px, 2.8vh, 25px); }
     .leaderboard-scaled .rank { width: clamp(1.5rem, 4vw, 2rem); padding-left: 0.1rem; }
     .leaderboard-scaled .name-meta { font-size: 0.5em; margin-top: 0.05em; }
@@ -154,6 +154,8 @@ def _leaderboard_content():
     if has_negative:
         st.info("**If your name is strikethrough:** meet with cashier to settle or buy more chips.")
         st.success("**Protip:** You can go into negative, but you must settle to qualify for a reward or to join another game.")
+    # Show top 10 only so they fit on every display
+    df = df.head(10)
     if "last_positions" not in st.session_state:
         st.session_state.last_positions = get_position_map(df)
     current_positions = get_position_map(df)
@@ -859,24 +861,21 @@ def load_data() -> pd.DataFrame:
         )
     records = sheet.get_all_records()
     if not records:
-        return pd.DataFrame(columns=["Player", "RaffleTickets"])
+        return pd.DataFrame(columns=["Player", "Dollar Amount", "Chips"])
 
     df = pd.DataFrame(records)
-    # Sheet has: Player, Dollar Amount, Chips, Earned Tickets (or Raffle Tickets). We use Player + ticket count.
-    tickets_col = TICKETS_SHEET_COL if TICKETS_SHEET_COL in df.columns else "Raffle Tickets"
-    if tickets_col not in df.columns:
-        df[tickets_col] = 0
-    df["RaffleTickets"] = df[tickets_col]
+    # Sheet columns: Player, Dollar Amount, Chips. Rank by Chips.
     if "Player" not in df.columns:
         df["Player"] = ""
-    for col in ["Table", "High Rolling Status", "LastUpdate", "Dollar Amount"]:
+    for col in ["Dollar Amount", "Chips"]:
         if col not in df.columns:
-            df[col] = None
+            df[col] = 0
     df["Dollar Amount"] = pd.to_numeric(df["Dollar Amount"], errors="coerce").fillna(0)
-
-    df["RaffleTickets"] = pd.to_numeric(df["RaffleTickets"], errors="coerce").fillna(0).astype(int)
-    df = df.sort_values("RaffleTickets", ascending=False).reset_index(drop=True)
+    df["Chips"] = pd.to_numeric(df["Chips"], errors="coerce").fillna(0).astype(int)
+    df = df.sort_values("Chips", ascending=False).reset_index(drop=True)
     df["Rank"] = df.index + 1
+    # Don't expose amounts on leaderboard; keep RaffleTickets for code that expects it
+    df["RaffleTickets"] = 0
     return df
 
 
@@ -944,6 +943,8 @@ def render_row(row, movement: str):
     meta_html = f"<div class='name-meta'>{meta_line}</div>" if meta_line else ""
 
     player_safe = escape(str(row["Player"]))
+    if is_whale:
+        player_safe = "🐋 " + player_safe
     rank_num = int(row["Rank"])
     if rank_num <= 2:
         medal = "🥇"
@@ -955,14 +956,13 @@ def render_row(row, movement: str):
         medal = ""
     rank_display = str(rank_num)
     medal_html = f'<div class="medal-cell">{medal}</div>' if medal else '<div class="medal-cell"></div>'
-    # Build HTML: medal left of the gradient row (rank, name, tickets, movement)
+    # Build HTML: medal left of the gradient row (rank, name only; no amounts)
     row_html = (
         f'<div class="leader-row-wrap">'
         f'{medal_html}'
         f'<div class="leader-row {row_class}">'
         f'<div class="rank">{rank_display}</div>'
         f'<div class="name"><div class="name-main">{player_safe}</div>{meta_html}</div>'
-        f'<div class="tickets">{row["RaffleTickets"]:,} <span style="font-size:1rem;opacity:0.9;">tickets</span></div>'
         f'<div class="{movement_class}" style="width:3rem;text-align:right;">{movement_symbol}</div>'
         "</div></div>"
     )
@@ -1260,136 +1260,32 @@ def main():
     if st.query_params.get("view") == "celebration":
         _celebration_view()
         return
-    if st.query_params.get("view") == "operator":
-        _operator_view()
-        return
+    # if st.query_params.get("view") == "operator":
+    #     _operator_view()
+    #     return
     # Clear operator cache, queue, unlock, and name when not on operator page
     for key in ("operator_df", "operator_options", "operator_pending", "last_operator_flush_time", "operator_unlocked", "operator_name"):
         if key in st.session_state:
             del st.session_state[key]
-    # Title centered, then whale image below centered
+
     st.markdown(
-        "<h1 style='color:#f97316; font-size:clamp(2.5rem, 5vw, 4rem); letter-spacing:0.15em; "
-        "text-transform:uppercase; line-height:1.2; margin:0; text-align:center;'>"
-        "Casino Night<br>Leaderboard"
-        "</h1>",
+        "<h1 style='color:#f97316; font-size:clamp(1.5rem, 4vw, 2.5rem); letter-spacing:0.1em; "
+        "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Leaderboard</h1>",
         unsafe_allow_html=True,
     )
-    try:
-        from PIL import Image
-        whale_path = Path("assets/whale.png")
-        if whale_path.exists():
-            img = Image.open(whale_path).convert("RGBA")
-            r, g, b = tuple(int(APP_BG_HEX.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
-            bg = Image.new("RGBA", img.size, (r, g, b, 255))
-            out = Image.alpha_composite(bg, img)
-            resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
-            small = out.resize((out.width // 4, out.height // 4), resample)
-            buf = io.BytesIO()
-            small.save(buf, format="PNG")
-            b64 = base64.b64encode(buf.getvalue()).decode()
-            st.markdown(
-                f'<div style="display:flex; justify-content:center; align-items:center;">'
-                f'<img src="data:image/png;base64,{b64}" style="display:block;" />'
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.image(str(whale_path), use_container_width=True)
-    except Exception:
-        try:
-            st.image("assets/whale.png", use_container_width=True)
-        except Exception:
-            pass
-    st.markdown(
-        "<p style='text-align:center; color:#9ca3af; font-size:1.1rem;'>"
-        "Ranked by earned tickets only (Chips Bought, Chips Spent & Chips Total not shown)"
-        "</p>",
-        unsafe_allow_html=True,
-    )
-    # Fetch Config A2 (deadline) from API only once at app start
-    if "countdown_end_fetched" not in st.session_state:
-        st.session_state.countdown_end = get_config_from_sheet()
-        st.session_state.countdown_end_fetched = True
-    end = st.session_state.get("countdown_end")
-    # On first load: pull Options into Config B and add bucket columns to Casino Night
-    if "bucket_columns_synced" not in st.session_state:
-        options = get_winning_options()
-        if options:
-            _ensure_bucket_columns(options)
-        st.session_state.bucket_columns_synced = True
-
-    # Countdown or clock (no fragment; updates when page reruns)
-    now = datetime.now()
-    if end is not None:
-        if end > now:
-            delta = end - now
-            total_secs = int(delta.total_seconds())
-            hrs, rest = divmod(total_secs, 3600)
-            mins, secs = divmod(rest, 60)
-            countdown_str = f"{hrs}:{mins:02d}:{secs:02d}" if hrs else f"{mins}:{secs:02d}"
-            timer_html = f"Ends in: <span style='font-weight:700; color:#f97316;'>{countdown_str}</span>"
-        else:
-            timer_html = "Event ended"
-        st.markdown(
-            f"<p style='text-align:center; color:#6b7280; font-size:1.25rem; "
-            "font-variant-numeric: tabular-nums; margin-top:0.25rem;'>"
-            f"{timer_html}"
-            "</p>",
-            unsafe_allow_html=True,
-        )
-    else:
-        time_str = now.strftime("%I:%M %p")
-        date_str = now.strftime("%A, %b %d")
-        st.markdown(
-            f"<p style='text-align:center; color:#6b7280; font-size:1.25rem; "
-            "font-variant-numeric: tabular-nums; margin-top:0.25rem;'>"
-            f"{time_str}  ·  {date_str}"
-            "</p>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
     _leaderboard_fragment()
 
-    # Buttons at bottom for TV: main content above, actions below
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown(
-        '<div class="tv-bottom-actions">',
-        unsafe_allow_html=True,
-    )
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    with col1:
-        if st.button("Operator (spend / earn)", key="view_operator", use_container_width=True):
-            st.query_params["view"] = "operator"
-            st.rerun()
-    with col2:
-        if st.button("View Winners", key="view_winners", use_container_width=True):
-            if "celebration_winners" in st.session_state:
-                del st.session_state["celebration_winners"]
-            st.query_params["view"] = "celebration"
-            st.rerun()
-    with col3:
-        if st.button("Draw Winners", key="draw_winners", use_container_width=True):
-            ok, msg = run_draw_winners()
-            if ok:
-                if "celebration_winners" in st.session_state:
-                    del st.session_state["celebration_winners"]
-                st.success(msg)
-                st.rerun()
-            else:
-                st.error(msg)
-    with col4:
-        if st.button("Sync Options from Options Sheet", key="sync_options", use_container_width=True):
-            options = get_winning_options()
-            if options:
-                _ensure_bucket_columns(options)
-                st.success(f"Synced {len(options)} options from Options sheet to bucket columns.")
-                st.rerun()
-            else:
-                st.warning("No options found. Add an Options sheet with 'Winning Options' in A1 and option names in A2 down.")
-    st.markdown("</div>", unsafe_allow_html=True)
+    # View Winners button hidden
+    # st.markdown("<br><br>", unsafe_allow_html=True)
+    # st.markdown('<div class="tv-bottom-actions">', unsafe_allow_html=True)
+    # col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    # with col2:
+    #     if st.button("View Winners", key="view_winners", use_container_width=True):
+    #         if "celebration_winners" in st.session_state:
+    #             del st.session_state["celebration_winners"]
+    #         st.query_params["view"] = "celebration"
+    #         st.rerun()
+    # st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
