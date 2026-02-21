@@ -59,10 +59,15 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    /* Fire TV / TV remotes: scroll must be on document, not inner divs */
+    html { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100%; }
+    body { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100%; -webkit-overflow-scrolling: touch; }
+    .stApp, [data-testid="stAppViewContainer"] { overflow: visible !important; min-height: auto !important; height: auto !important; }
+    .main { overflow: visible !important; }
     /* Force night mode and TV display */
     .stApp, [data-testid="stAppViewContainer"], .main .block-container { background-color: #02111b !important; }
     body { background-color: #02111b !important; }
-    .block-container { padding-top: 0.75rem; padding-bottom: 1.5rem; max-width: 1600px; margin-left: auto; margin-right: auto; }
+    .block-container { padding-top: 0.75rem; padding-bottom: 1.5rem; max-width: 1600px; margin-left: auto; margin-right: auto; overflow: visible !important; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
@@ -1268,12 +1273,28 @@ def main():
         if key in st.session_state:
             del st.session_state[key]
 
+    # Scale buttons: − and +
+    scale = st.session_state.get("leaderboard_scale", 100)
+    c1, c2, c3 = st.columns([1, 4, 1])
+    with c1:
+        if st.button("−", key="scale_down", use_container_width=True):
+            st.session_state.leaderboard_scale = max(50, st.session_state.get("leaderboard_scale", 100) - 10)
+            st.rerun()
+    with c3:
+        if st.button("+", key="scale_up", use_container_width=True):
+            st.session_state.leaderboard_scale = min(150, st.session_state.get("leaderboard_scale", 100) + 10)
+            st.rerun()
+    with c2:
+        pass  # spacing
+
+    st.markdown(f'<div class="leaderboard-scale-wrap" style="font-size: {scale}%;">', unsafe_allow_html=True)
     st.markdown(
         "<h1 style='color:#f97316; font-size:clamp(1.5rem, 4vw, 2.5rem); letter-spacing:0.1em; "
         "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Leaderboard</h1>",
         unsafe_allow_html=True,
     )
     _leaderboard_fragment()
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # View Winners button hidden
     # st.markdown("<br><br>", unsafe_allow_html=True)
