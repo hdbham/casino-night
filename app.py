@@ -460,7 +460,7 @@ def run_draw_winners() -> Tuple[bool, str]:
 
 
 def get_item_winners() -> List[dict]:
-    """Read item winners from WinningResults sheet (Category, Winner, Probability). Returns list of {item, winner, probability}."""
+    """Read item winners from WinningResults sheet (Category, Winner). Returns list of {item, winner}."""
     if DEMO_MODE or Credentials is None or gspread is None:
         return []
     try:
@@ -470,18 +470,24 @@ def get_item_winners() -> List[dict]:
             return []
         client = get_sheet_client()
         spreadsheet = client.open_by_key(sheet_id)
-        try:
-            results_sheet = spreadsheet.worksheet(WINNING_RESULTS_SHEET_NAME)
-        except Exception:
+        results_sheet = None
+        for name in (WINNING_RESULTS_SHEET_NAME, "Winning Results", "WinningResults"):
+            try:
+                results_sheet = spreadsheet.worksheet(name)
+                break
+            except Exception:
+                continue
+        if results_sheet is None:
             return []
         rows = results_sheet.get_all_records()
         out = []
         for row in rows or []:
-            item = (row.get("Category") or row.get("category") or "").strip()
-            winner = (row.get("Winner") or row.get("winner") or "").strip()
-            probability = (row.get("Probability") or row.get("probability") or "").strip()
+            # Normalize keys: first row headers may have spaces/case differences
+            row_lower = {str(k).strip().lower(): v for k, v in (row or {}).items()}
+            item = str(row_lower.get("category", "") or "").strip()
+            winner = str(row_lower.get("winner", "") or "").strip()
             if winner or item:
-                out.append({"item": item or "Winner", "winner": winner or "—", "probability": probability})
+                out.append({"item": item or "Winner", "winner": winner or "—", "probability": ""})
         return out
     except Exception:
         return []
@@ -1001,18 +1007,18 @@ WINNER_DURATION_SECONDS = 20
 
 
 def _celebration_view():
-    """Full-screen winner reveal: one winner every 20s with confetti. Data from WinningResults sheet or top 3 leaderboard."""
-    winners = st.session_state.get("celebration_winners")
-    if winners is None:
-        winners = get_item_winners()
-        if not winners:
-            try:
-                df = load_data()
-                if not df.empty:
-                    for i, (_, row) in enumerate(df.head(3).iterrows()):
-                        winners.append({"item": ["1st Place", "2nd Place", "3rd Place"][i], "winner": str(row.get("Player", "—"))})
-            except Exception:
-                pass
+    """Full-screen winner reveal: one winner every 20s with confetti. Data from WinningResults sheet (Category, Winner)."""
+    # Always refetch from sheet so new data shows; keep rotation index in session
+    winners = get_item_winners()
+    if not winners:
+        try:
+            df = load_data()
+            if not df.empty:
+                for i, (_, row) in enumerate(df.head(3).iterrows()):
+                    winners.append({"item": ["1st Place", "2nd Place", "3rd Place"][i], "winner": str(row.get("Player", "—"))})
+        except Exception:
+            pass
+    if "celebration_start" not in st.session_state or st.session_state.get("celebration_winners") != winners:
         st.session_state.celebration_winners = winners
         st.session_state.celebration_start = time.time()
     if not winners:
