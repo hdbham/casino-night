@@ -116,12 +116,12 @@ st.markdown(
     .bronze { background: linear-gradient(90deg,#e0b089,#8b4513); color: #1f130b; }
     .neutral { background: #041826; color: #e5e7eb; }
     .leader-row.negative-chips { text-decoration: line-through; opacity: 0.85; }
-    /* Natural flow: no fixed height so nothing gets pushed out */
+    /* All rem so 10 rows fit; no scale wrapper */
     .leaderboard-scaled { overflow: visible; }
-    .leaderboard-scaled .leader-row-wrap { display: flex; align-items: center; margin-bottom: 0.35rem; }
-    .leaderboard-scaled .leader-row { font-size: clamp(0.65rem, 2.2vh, 1.5rem); padding: 0.35rem 0.5rem; margin: 0; border-radius: 4px; }
-    .leaderboard-scaled .medal-cell { width: clamp(1.25rem, 3.5vw, 1.75rem); font-size: clamp(14px, 2.8vh, 25px); }
-    .leaderboard-scaled .rank { width: clamp(1.5rem, 4vw, 2rem); padding-left: 0.1rem; }
+    .leaderboard-scaled .leader-row-wrap { display: flex; align-items: center; margin-bottom: 0.25rem; }
+    .leaderboard-scaled .leader-row { font-size: 0.9rem; padding: 0.25rem 0.5rem; margin: 0; border-radius: 0.25rem; }
+    .leaderboard-scaled .medal-cell { width: 1.5rem; font-size: 1.25rem; }
+    .leaderboard-scaled .rank { width: 1.75rem; padding-left: 0.1rem; }
     .leaderboard-scaled .name-meta { font-size: 0.5em; margin-top: 0.05em; }
     .leaderboard-scaled .status-badge { font-size: 0.85em; }
     .leaderboard-scaled .leader-row .up,
@@ -162,8 +162,8 @@ def _leaderboard_content():
     if has_negative:
         st.info("**If your name is strikethrough:** meet with cashier to settle or buy more chips.")
         st.success("**Protip:** You can go into negative, but you must settle to qualify for a reward or to join another game.")
-    # Show top 8 so they fit on one screen without scrolling (Fire TV scroll unreliable)
-    df = df.head(8)
+    # Show top 10; scale reduced by 8/10 so 10 rows fit in space of 8
+    df = df.head(10)
     if "last_positions" not in st.session_state:
         st.session_state.last_positions = get_position_map(df)
     current_positions = get_position_map(df)
@@ -1276,24 +1276,12 @@ def main():
         if key in st.session_state:
             del st.session_state[key]
 
-    # URL flag: ?scaling=40 or ?scaling=40% overrides scale (default 50)
-    scale_param = st.query_params.get("scaling") or st.query_params.get("scale")
-    if scale_param is not None:
-        try:
-            scale = int(str(scale_param).strip().rstrip("%"))
-            scale = max(20, min(100, scale))
-        except (ValueError, TypeError):
-            scale = 50
-    else:
-        scale = st.session_state.get("leaderboard_scale", 50)
-    st.markdown(f'<div class="leaderboard-scale-wrap" style="font-size: {scale}%;">', unsafe_allow_html=True)
     st.markdown(
-        "<h1 style='color:#f97316; font-size:clamp(1.5rem, 4vw, 2.5rem); letter-spacing:0.1em; "
+        "<h1 style='color:#f97316; font-size:1.75rem; letter-spacing:0.1em; "
         "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Leaderboard</h1>",
         unsafe_allow_html=True,
     )
     _leaderboard_fragment()
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # View Winners button hidden
     # st.markdown("<br><br>", unsafe_allow_html=True)
