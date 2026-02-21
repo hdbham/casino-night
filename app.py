@@ -302,39 +302,13 @@ def _weighted_draw_one(pool: List[Tuple[str, int]]) -> Tuple[Optional[str], int,
 
 
 
-OPTIONS_SHEET_NAME = "Options"
-OPTIONS_HEADER = "Winning Options"
 WINNING_RESULTS_SHEET_NAME = "WinningResults"
 LOG_SHEET_NAME = "Log"
 
 
 def get_winning_options() -> List[str]:
-    """Read winning categories from Options sheet: column A, row 2 onward (row 1 = header). Returns list of option names."""
-    if DEMO_MODE or Credentials is None or gspread is None:
-        return []
-    try:
-        cfg = st.secrets.get("sheets", {})
-        sheet_id = cfg.get("sheet_id")
-        if not sheet_id:
-            return []
-        client = get_sheet_client()
-        ss = client.open_by_key(sheet_id)
-        try:
-            opt_sheet = ss.worksheet(OPTIONS_SHEET_NAME)
-        except Exception:
-            return []
-        col_a = opt_sheet.col_values(1)
-        # Row 1 = header ("Winning Options"), options start row 2
-        out = []
-        for i, cell in enumerate(col_a):
-            if i == 0:
-                continue
-            s = (cell or "").strip()
-            if s:
-                out.append(s)
-        return out
-    except Exception:
-        return []
+    """Options sheet is no longer used; return empty list so no Options sheet is read."""
+    return []
 
 
 def _ensure_bucket_columns(option_names: List[str]) -> None:
