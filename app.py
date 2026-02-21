@@ -1008,16 +1008,8 @@ WINNER_DURATION_SECONDS = 20
 
 def _celebration_view():
     """Full-screen winner reveal: one winner every 20s with confetti. Data from WinningResults sheet (Category, Winner)."""
-    # Always refetch from sheet so new data shows; keep rotation index in session
+    # Always refetch from sheet so new data shows
     winners = get_item_winners()
-    if not winners:
-        try:
-            df = load_data()
-            if not df.empty:
-                for i, (_, row) in enumerate(df.head(3).iterrows()):
-                    winners.append({"item": ["1st Place", "2nd Place", "3rd Place"][i], "winner": str(row.get("Player", "—"))})
-        except Exception:
-            pass
     if "celebration_start" not in st.session_state or st.session_state.get("celebration_winners") != winners:
         st.session_state.celebration_winners = winners
         st.session_state.celebration_start = time.time()
