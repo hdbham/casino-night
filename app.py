@@ -59,11 +59,14 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Fire TV / TV remotes: scroll must be on document, not inner divs */
-    html { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100%; }
-    body { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100%; -webkit-overflow-scrolling: touch; }
-    .stApp, [data-testid="stAppViewContainer"] { overflow: visible !important; min-height: auto !important; height: auto !important; }
-    .main { overflow: visible !important; }
+    /* Fire TV / TV: force page scroll so remote up/down works */
+    html, body { overflow-y: scroll !important; overflow-x: hidden !important; height: auto !important; min-height: 100% !important; overflow-scrolling: touch; -webkit-overflow-scrolling: touch; }
+    .stApp { overflow: visible !important; height: auto !important; min-height: auto !important; }
+    [data-testid="stAppViewContainer"] { overflow: visible !important; height: auto !important; min-height: auto !important; }
+    section[data-testid="stAppViewContainer"] { overflow: visible !important; }
+    .main, .main .block-container, [data-testid="stVerticalBlock"] { overflow: visible !important; }
+    /* Prevent any fixed-height scroll trap */
+    div[data-testid="stVerticalBlock"] { max-height: none !important; }
     /* Force night mode and TV display */
     .stApp, [data-testid="stAppViewContainer"], .main .block-container { background-color: #02111b !important; }
     body { background-color: #02111b !important; }
@@ -1273,7 +1276,16 @@ def main():
         if key in st.session_state:
             del st.session_state[key]
 
-    scale = st.session_state.get("leaderboard_scale", 50)
+    # URL flag: ?scaling=40 or ?scaling=40% overrides scale (default 50)
+    scale_param = st.query_params.get("scaling") or st.query_params.get("scale")
+    if scale_param is not None:
+        try:
+            scale = int(str(scale_param).strip().rstrip("%"))
+            scale = max(20, min(100, scale))
+        except (ValueError, TypeError):
+            scale = 50
+    else:
+        scale = st.session_state.get("leaderboard_scale", 50)
     st.markdown(f'<div class="leaderboard-scale-wrap" style="font-size: {scale}%;">', unsafe_allow_html=True)
     st.markdown(
         "<h1 style='color:#f97316; font-size:clamp(1.5rem, 4vw, 2.5rem); letter-spacing:0.1em; "
