@@ -459,38 +459,46 @@ def run_draw_winners() -> Tuple[bool, str]:
         return False, str(e)
 
 
-def get_item_winners() -> List[dict]:
-    """Read item winners from WinningResults sheet (Category, Winner). Returns list of {item, winner}."""
+def get_item_winners() -> Tuple[List[dict], Optional[str]]:
+    """Read from WinningResults sheet (Category, Winner). Returns (list of {item, winner}, error_message or None)."""
     if DEMO_MODE or Credentials is None or gspread is None:
-        return []
+        return [], "Google Sheets not available (demo mode or missing gspread)."
     try:
         cfg = st.secrets.get("sheets", {})
         sheet_id = cfg.get("sheet_id")
         if not sheet_id:
-            return []
+            return [], "No sheet_id in secrets."
         client = get_sheet_client()
         spreadsheet = client.open_by_key(sheet_id)
         results_sheet = None
+        tried = []
         for name in (WINNING_RESULTS_SHEET_NAME, "Winning Results", "WinningResults"):
             try:
                 results_sheet = spreadsheet.worksheet(name)
                 break
             except Exception:
+                tried.append(name)
                 continue
         if results_sheet is None:
-            return []
+            all_tabs = [ws.title for ws in spreadsheet.worksheets()]
+            return [], f"No tab named 'WinningResults' or 'Winning Results'. Tabs in this spreadsheet: {', '.join(all_tabs) or 'none'}."
         rows = results_sheet.get_all_records()
         out = []
         for row in rows or []:
-            # Normalize keys: first row headers may have spaces/case differences
             row_lower = {str(k).strip().lower(): v for k, v in (row or {}).items()}
             item = str(row_lower.get("category", "") or "").strip()
             winner = str(row_lower.get("winner", "") or "").strip()
             if winner or item:
                 out.append({"item": item or "Winner", "winner": winner or "—", "probability": ""})
-        return out
-    except Exception:
-        return []
+        if not out and rows:
+            first = rows[0] if rows else {}
+            headers = list(first.keys()) if isinstance(first, dict) else []
+            return [], f"WinningResults has data but no Category/Winner columns. Row 1 headers: {headers}. Need 'Category' in A1 and 'Winner' in B1."
+        if not out:
+            return [], "WinningResults sheet is empty. Put 'Category' in A1, 'Winner' in B1, then your rows (e.g. Tattoo, Hunter)."
+        return out, None
+    except Exception as e:
+        return [], str(e)
 
 
 def _get_leaderboard_worksheet_write():
@@ -1008,16 +1016,17 @@ WINNER_DURATION_SECONDS = 20
 
 def _celebration_view():
     """Full-screen winner reveal: one winner every 20s with confetti. Data from WinningResults sheet (Category, Winner)."""
-    # Always refetch from sheet so new data shows
-    winners = get_item_winners()
+    winners, err = get_item_winners()
     if "celebration_start" not in st.session_state or st.session_state.get("celebration_winners") != winners:
         st.session_state.celebration_winners = winners
         st.session_state.celebration_start = time.time()
     if not winners:
         st.markdown(
-            "<p style='text-align:center; color:#9ca3af;'>No winners yet. Fill the <b>WinningResults</b> sheet with Category and Winner, or go back.</p>",
+            "<p style='text-align:center; color:#9ca3af;'>No winners from <b>WinningResults</b> sheet.</p>",
             unsafe_allow_html=True,
         )
+        if err:
+            st.warning(err)
         st.markdown("<p style='text-align:center;'><a href='?' style='color:#f97316;'>Back to Highrollers</a></p>", unsafe_allow_html=True)
         return
 
