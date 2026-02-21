@@ -1274,15 +1274,15 @@ def main():
             del st.session_state[key]
 
     # Scale buttons: − and +
-    scale = st.session_state.get("leaderboard_scale", 100)
+    scale = st.session_state.get("leaderboard_scale", 50)
     c1, c2, c3 = st.columns([1, 4, 1])
     with c1:
         if st.button("−", key="scale_down", use_container_width=True):
-            st.session_state.leaderboard_scale = max(50, st.session_state.get("leaderboard_scale", 100) - 10)
+            st.session_state.leaderboard_scale = max(30, st.session_state.get("leaderboard_scale", 50) - 10)
             st.rerun()
     with c3:
         if st.button("+", key="scale_up", use_container_width=True):
-            st.session_state.leaderboard_scale = min(150, st.session_state.get("leaderboard_scale", 100) + 10)
+            st.session_state.leaderboard_scale = min(100, st.session_state.get("leaderboard_scale", 50) + 10)
             st.rerun()
     with c2:
         pass  # spacing
