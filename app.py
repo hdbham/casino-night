@@ -116,17 +116,17 @@ st.markdown(
     .bronze { background: linear-gradient(90deg,#e0b089,#8b4513); color: #1f130b; }
     .neutral { background: #041826; color: #e5e7eb; }
     .leader-row.negative-chips { text-decoration: line-through; opacity: 0.85; }
-    /* All rem so 10 rows fit; no scale wrapper */
+    /* All rem, 20% smaller so 10 rows fit */
     .leaderboard-scaled { overflow: visible; }
-    .leaderboard-scaled .leader-row-wrap { display: flex; align-items: center; margin-bottom: 0.25rem; }
-    .leaderboard-scaled .leader-row { font-size: 0.9rem; padding: 0.25rem 0.5rem; margin: 0; border-radius: 0.25rem; }
-    .leaderboard-scaled .medal-cell { width: 1.5rem; font-size: 1.25rem; }
-    .leaderboard-scaled .rank { width: 1.75rem; padding-left: 0.1rem; }
+    .leaderboard-scaled .leader-row-wrap { display: flex; align-items: center; margin-bottom: 0.2rem; }
+    .leaderboard-scaled .leader-row { font-size: 0.72rem; padding: 0.2rem 0.4rem; margin: 0; border-radius: 0.2rem; }
+    .leaderboard-scaled .medal-cell { width: 1.2rem; font-size: 1rem; }
+    .leaderboard-scaled .rank { width: 1.4rem; padding-left: 0.08rem; }
     .leaderboard-scaled .name-meta { font-size: 0.5em; margin-top: 0.05em; }
     .leaderboard-scaled .status-badge { font-size: 0.85em; }
     .leaderboard-scaled .leader-row .up,
     .leaderboard-scaled .leader-row .down,
-    .leaderboard-scaled .leader-row .same { width: 1.25rem !important; }
+    .leaderboard-scaled .leader-row .same { width: 1rem !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1277,7 +1277,7 @@ def main():
             del st.session_state[key]
 
     st.markdown(
-        "<h1 style='color:#f97316; font-size:1.75rem; letter-spacing:0.1em; "
+        "<h1 style='color:#f97316; font-size:1.4rem; letter-spacing:0.1em; "
         "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Leaderboard</h1>",
         unsafe_allow_html=True,
     )
