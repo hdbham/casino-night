@@ -162,8 +162,8 @@ def _leaderboard_content():
     if has_negative:
         st.info("**If your name is strikethrough:** meet with cashier to settle or buy more chips.")
         st.success("**Protip:** You can go into negative, but you must settle to qualify for a reward or to join another game.")
-    # Show top 10 only so they fit on every display
-    df = df.head(10)
+    # Show top 8 so they fit on one screen without scrolling (Fire TV scroll unreliable)
+    df = df.head(8)
     if "last_positions" not in st.session_state:
         st.session_state.last_positions = get_position_map(df)
     current_positions = get_position_map(df)
