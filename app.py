@@ -51,7 +51,7 @@ SCOPES_WRITE = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # ---------- SETUP ----------
 st.set_page_config(
-    page_title="Leaderboard",
+    page_title="Highrollers",
     layout="wide",
 )
 
@@ -1278,7 +1278,7 @@ def main():
 
     st.markdown(
         "<h1 style='color:#f97316; font-size:1.4rem; letter-spacing:0.1em; "
-        "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Leaderboard</h1>",
+        "text-transform:uppercase; margin:0 0 0.5rem 0; text-align:center;'>Highrollers</h1>",
         unsafe_allow_html=True,
     )
     _leaderboard_fragment()
