@@ -1017,11 +1017,20 @@ def _celebration_view():
         st.session_state.celebration_start = time.time()
     if not winners:
         st.markdown(
-            "<p style='text-align:center; color:#9ca3af;'>No winners yet. Click <b>Draw Winners</b> to run the draw and fill the <b>WinningResults</b> sheet, or go back to the leaderboard.</p>",
+            "<p style='text-align:center; color:#9ca3af;'>No winners yet. Fill the <b>WinningResults</b> sheet with Category and Winner, or go back.</p>",
             unsafe_allow_html=True,
         )
-        st.markdown("<p style='text-align:center;'><a href='?' style='color:#f97316;'>Back to Leaderboard</a></p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;'><a href='?' style='color:#f97316;'>Back to Highrollers</a></p>", unsafe_allow_html=True)
         return
+
+    # Table of all results from WinningResults (Category, Winner)
+    st.markdown("<p style='color:#9ca3af; font-size:1rem; text-align:center; margin-bottom:1rem;'>From sheet <b>WinningResults</b></p>", unsafe_allow_html=True)
+    table_html = "<table style='margin:0 auto 2rem; border-collapse:collapse; color:#e5e7eb;'><tr style='border-bottom:1px solid #6b7280;'><th style='padding:0.5rem 1.5rem; text-align:left; color:#f97316;'>Category</th><th style='padding:0.5rem 1.5rem; text-align:left; color:#f97316;'>Winner</th></tr>"
+    for entry in winners:
+        cat, w = entry.get("item", "—"), entry.get("winner", "—")
+        table_html += f"<tr style='border-bottom:1px solid #374151;'><td style='padding:0.5rem 1.5rem;'>{escape(cat)}</td><td style='padding:0.5rem 1.5rem;'>{escape(w)}</td></tr>"
+    table_html += "</table>"
+    st.markdown(table_html, unsafe_allow_html=True)
 
     # Fragment reruns every WINNER_DURATION_SECONDS: new winner is shown and confetti runs in the same run (right after name change).
     # Confetti iframe behind winner block so the name is always visible (Streamlit iframes can't be made reliably transparent).
@@ -1040,16 +1049,11 @@ def _celebration_view():
         idx = int((time.time() - start) / WINNER_DURATION_SECONDS) % len(winners_list)
         entry = winners_list[idx]
         item, winner = entry.get("item", "Winner"), entry.get("winner", "—")
-        probability = entry.get("probability", "")
-        # Vary HTML by idx so iframe content changes each winner = confetti script reruns on name change
         components.html(CONFETTI_HTML + f"<!-- winner {idx} -->", height=100, scrolling=False)
-        # Winner block on top so name is never hidden; show probability under winner name
-        prob_html = f"<p style='color:#9ca3af; font-size:1.25rem; margin-top:0.5rem;'>{escape(probability)}</p>" if probability else ""
         st.markdown(
             f"<div class='celebration-winner-block' style='text-align:center; padding:4rem 2rem; background:transparent; min-height:60vh;'>"
             f"<p style='color:#f97316; font-size:1.8rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:1rem;'>{escape(item)}</p>"
             f"<p style='color:#fff; font-size:4rem; font-weight:800; letter-spacing:0.05em;'>{escape(winner)}</p>"
-            f"{prob_html}"
             f"<p style='color:#6b7280; font-size:1.2rem; margin-top:2rem;'>{idx + 1} of {len(winners_list)} · next in {WINNER_DURATION_SECONDS}s</p>"
             f"</div>",
             unsafe_allow_html=True,
@@ -1058,7 +1062,7 @@ def _celebration_view():
     _show_winner()
     st.markdown(
         "<p style='text-align:center; margin-top:1rem;'>"
-        "<a href='?' style='color:#6b7280;'>Back to Leaderboard</a></p>",
+        "<a href='?' style='color:#6b7280;'>Back to Highrollers</a></p>",
         unsafe_allow_html=True,
     )
 
